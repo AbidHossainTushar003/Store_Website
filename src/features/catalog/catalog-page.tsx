@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import type { DemoProduct, CatalogSort } from './catalog-data';
-import { filterDemoProducts } from './catalog-data';
+import type { StorefrontProduct, CatalogSort } from './catalog-data';
+import { filterCatalogProducts } from './catalog-data';
 import type { HomeCategory } from '@/features/home/home-page.mock';
 import { ProductCard } from './product-card';
 
 type CatalogPageProps = {
-  products: DemoProduct[];
+  products: StorefrontProduct[];
   categories: HomeCategory[];
   title: string;
   description: string;
@@ -25,22 +25,22 @@ export function CatalogPage({
   categorySlug,
   initialSort,
 }: CatalogPageProps) {
-  const filteredProducts = filterDemoProducts(products, initialQuery, categorySlug, initialSort);
+  const filteredProducts = filterCatalogProducts(products, initialQuery, categorySlug, initialSort);
   const activeCategory = categories.find((category) => category.slug === categorySlug);
 
   return (
     <section className="catalog-page" aria-labelledby="catalog-heading">
-      <p className="eyebrow">Fictional Shopademia demo catalogue</p>
+      <p className="eyebrow">Shopademia marketplace</p>
       <h1 id="catalog-heading">{title}</h1>
       <p className="catalog-intro">{description}</p>
       <p className="mock-disclaimer">
-        These fictional products are for interface testing only. They are not for sale and have no
-        real price, stock, delivery, checkout, or payment.
+        Demo examples are not for sale. Seller listings show a price and available stock and can be
+        ordered locally with cash on delivery.
       </p>
 
       <form className="catalog-controls" action={action} method="get">
         <div className="catalog-search-field">
-          <label htmlFor="catalog-query">Search demo products</label>
+          <label htmlFor="catalog-query">Search products</label>
           <input
             id="catalog-query"
             type="search"
@@ -72,19 +72,25 @@ export function CatalogPage({
       </form>
 
       <p className="catalog-results-count" role="status" aria-live="polite">
-        {filteredProducts.length} demo {filteredProducts.length === 1 ? 'product' : 'products'}
+        {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
         {initialQuery ? ` matching “${initialQuery}”` : ''}
         {activeCategory ? ` in ${activeCategory.name}` : ''}
       </p>
 
       {filteredProducts.length ? (
         <ul className="product-grid">
-          {filteredProducts.map((product) => <ProductCard key={product.id} product={product} />)}
+          {filteredProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              returnTo={categorySlug ?? 'search'}
+            />
+          ))}
         </ul>
       ) : (
         <div className="catalog-empty" role="status">
-          <h2>No demo products found</h2>
-          <p>Try a different search or category, or reset the filters to browse all examples.</p>
+          <h2>No products found</h2>
+          <p>Try a different search or category, or reset the filters.</p>
           <Link className="catalog-reset" href="/search">Clear filters</Link>
         </div>
       )}

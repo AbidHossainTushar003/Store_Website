@@ -23,7 +23,7 @@ function HeaderActions() {
         </span>
         <span className="action-label">Wishlist</span>
       </Link>
-      <button className="header-action" type="button" disabled aria-label={`Account, ${unavailableLabel}`}>
+      <Link className="header-action" href="/account" aria-label="Account preview">
         <span className="action-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24">
             <circle cx="12" cy="8" r="3.2" />
@@ -31,8 +31,8 @@ function HeaderActions() {
           </svg>
         </span>
         <span className="action-label">Account</span>
-        <span className="action-status">{unavailableLabel}</span>
-      </button>
+        <span className="action-status">Preview</span>
+      </Link>
       <Link className="header-action" href="/cart" aria-label="Cart">
         <span className="action-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24">
@@ -60,11 +60,11 @@ function SearchBox({ variant }: { variant: 'desktop' | 'mobile' }) {
         id={inputId}
         type="search"
         name="q"
-        placeholder="Search demo products"
+        placeholder="Search products"
         autoComplete="off"
         aria-describedby={statusId}
       />
-      <button type="submit" aria-label="Search demo products">
+      <button type="submit" aria-label="Search products">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="10.8" cy="10.8" r="6.3" />
           <path d="m15.5 15.5 4.2 4.2" />
@@ -72,7 +72,7 @@ function SearchBox({ variant }: { variant: 'desktop' | 'mobile' }) {
         <span>Search</span>
       </button>
       <span id={statusId} className="visually-hidden">
-        Searches the fictional Shopademia demo catalogue.
+        Searches listings approved for public display.
       </span>
     </form>
   );
@@ -101,7 +101,7 @@ export function SiteHeader() {
             </summary>
             <nav className="mobile-menu-panel" aria-label="Mobile navigation">
               <Link href="/">Home</Link>
-              <Link href="/search">Browse demo products</Link>
+              <Link href="/search">Browse products</Link>
               {homeCategories.map((category) => (
                 <Link key={category.slug} href={`/categories/${category.slug}`}>
                   {category.name} <span className="nav-demo-label">Example category</span>
@@ -119,7 +119,7 @@ export function SiteHeader() {
           <Link href="/">
             Home
           </Link>
-          <Link href="/search">Browse products <small>Demo catalogue</small></Link>
+          <Link href="/search">Browse products <small>Local marketplace</small></Link>
           <Link href={`/categories/${homeCategories[0].slug}`}>
             Categories <small>Example destinations</small>
           </Link>

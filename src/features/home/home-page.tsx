@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { getDemoProducts } from './home-page.data';
+import { getCatalogProducts } from './home-page.data';
 import { homeCategories } from './home-page.mock';
 import { ProductCard } from '@/features/catalog/product-card';
+import { CatalogRetryButton } from '@/features/catalog/catalog-retry-button';
 
 function HeroSection() {
   return (
@@ -10,10 +11,9 @@ function HeroSection() {
         <p className="eyebrow">A marketplace for curious minds</p>
         <h1 id="home-heading">Find a little more of what you love.</h1>
         <p>
-          Shopademia is taking shape. Explore a preview of the marketplace
-          experience while we build what comes next.
+          Explore seller listings and test a local cash-on-delivery order through the development marketplace.
         </p>
-        <Link className="hero-cta" href="/search">Browse demo products</Link>
+        <Link className="hero-cta" href="/search">Browse products</Link>
       </div>
       <div className="home-hero-art" aria-hidden="true">
         <span className="hero-orbit hero-orbit-one" />
@@ -39,7 +39,7 @@ function CategorySection() {
           <p className="eyebrow">Explore the marketplace</p>
           <h2 id="categories-heading">Browse categories</h2>
         </div>
-        <p className="home-section-note">Illustrative category filters for the demo catalogue</p>
+        <p className="home-section-note">Browse listings approved for public display</p>
       </div>
       <ul className="category-grid">
         {homeCategories.map((category) => (
@@ -47,7 +47,7 @@ function CategorySection() {
             <Link
               className="category-card-link"
               href={`/categories/${category.slug}`}
-              aria-label={`Browse example ${category.name} category`}
+              aria-label={`Browse ${category.name} category`}
             >
               <span className="category-mark" aria-hidden="true">
                 {category.mark}
@@ -56,7 +56,7 @@ function CategorySection() {
                 <h3>{category.name}</h3>
                 <p>{category.description}</p>
               </div>
-              <span className="category-status">Example category · demo only</span>
+              <span className="category-status">Browse category</span>
             </Link>
           </li>
         ))}
@@ -66,38 +66,37 @@ function CategorySection() {
 }
 
 async function FeaturedProductsSection() {
-  const result = await getDemoProducts();
+  const result = await getCatalogProducts();
   const products = result.ok ? result.products : [];
 
   return (
     <section className="home-section" aria-labelledby="products-heading">
       <div className="home-section-heading">
         <div>
-          <p className="eyebrow">Shopademia demo catalogue</p>
-          <h2 id="products-heading">Product examples</h2>
+          <p className="eyebrow">Shopademia catalogue</p>
+          <h2 id="products-heading">Marketplace products</h2>
         </div>
         {products.length ? (
           <Link className="catalog-view-all" href="/search">
-            Browse all {products.length} demo products
+            Browse all {products.length} products
           </Link>
         ) : null}
       </div>
       <p className="mock-disclaimer">
-        <strong>Fictional demo catalogue:</strong> these sample products and any cart or wishlist entries are
-        for interface testing only. They are not for sale and are not real Shopademia listings. Buy now is
-        unavailable; no checkout, payment, stock, price, availability, or delivery is provided.
+        Seller listings with prices can be ordered locally with cash on delivery. This is a test workflow, not a real sale.
       </p>
       {!result.ok ? (
-        <p className="catalog-unavailable" role="status">
-          The Shopademia demo catalogue is unavailable right now. Please try again later.
-        </p>
+        <div className="catalog-unavailable" role="alert">
+          <p>The Shopademia catalogue is unavailable right now.</p>
+          <CatalogRetryButton />
+        </div>
       ) : products.length ? (
         <ul className="product-grid">
           {products.slice(0, 4).map((product) => <ProductCard key={product.id} product={product} />)}
         </ul>
       ) : (
         <p className="catalog-unavailable">
-          The Shopademia demo catalogue currently has no products to display.
+          The Shopademia catalogue currently has no products to display.
         </p>
       )}
     </section>
@@ -111,11 +110,10 @@ function DevelopmentSection() {
         S
       </span>
       <div>
-        <p className="eyebrow">A work in progress</p>
-        <h2 id="development-heading">The Shopademia storefront is under development.</h2>
+        <p className="eyebrow">Local test workflow</p>
+        <h2 id="development-heading">Place and confirm a local COD test order.</h2>
         <p>
-          The catalogue, cart, and wishlist are connected to a development API for demonstration. No real
-          orders, checkout, payments, or fulfilment are available.
+          Seller listings and COD test orders are persisted in an isolated local database. No real payments or fulfillment service is connected.
         </p>
       </div>
     </section>

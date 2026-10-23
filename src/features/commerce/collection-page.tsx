@@ -1,20 +1,19 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import {
   parseCollectionProduct,
-  type DemoProduct,
+  type StorefrontProduct,
 } from '@/features/catalog/catalog-data';
-
-const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001/api/v1';
+import { getApiBaseUrl } from '@/lib/api-base';
 
 type CollectionKind = 'cart' | 'wishlist';
 
-type CartItem = DemoProduct & { quantity: number };
-type CollectionItem = DemoProduct | CartItem;
+type CartItem = StorefrontProduct & { quantity: number };
+type CollectionItem = StorefrontProduct | CartItem;
 
-type CollectionResponse = { items: CartItem[]; totalQuantity: number } | { items: DemoProduct[] };
+type CollectionResponse = { items: CartItem[]; totalQuantity: number } | { items: StorefrontProduct[] };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -58,7 +57,24 @@ function parseCollectionResponse(
   if (items.some((item) => item === undefined)) {
     return undefined;
   }
-  return { items: items.filter((item): item is DemoProduct => item !== undefined) };
+  return { items: items.filter((item): item is StorefrontProduct => item !== undefined) };
+}
+
+async function fetchCollectionItems(collection: CollectionKind): Promise<CollectionItem[]> {
+  const response = await fetch(`${getApiBaseUrl()}/${collection}`, {
+    credentials: 'include',
+    cache: 'no-store',
+  });
+  if (!response.ok) {
+    throw new Error(`API returned HTTP ${response.status}`);
+  }
+
+  const payload: unknown = await response.json();
+  const parsedResponse = parseCollectionResponse(payload, collection);
+  if (!parsedResponse) {
+    throw new Error(`Shopademia API returned an invalid ${collection} response`);
+  }
+  return parsedResponse.items;
 }
 
 export function CollectionPage({ collection }: { collection: CollectionKind }) {
@@ -69,28 +85,11 @@ export function CollectionPage({ collection }: { collection: CollectionKind }) {
   const pendingIdsRef = useRef(new Set<string>());
   const [feedback, setFeedback] = useState<{ message: string; isError: boolean } | null>(null);
   const isCart = collection === 'cart';
-  const title = isCart ? 'Demo cart' : 'Demo wishlist';
+  const title = isCart ? 'Shopping cart' : 'Wishlist';
 
   const loadItems = useCallback(async () => {
-    setLoading(true);
-    setLoadError(false);
-    setFeedback(null);
-
     try {
-      const response = await fetch(`${apiBaseUrl}/${collection}`, {
-        credentials: 'include',
-        cache: 'no-store',
-      });
-      if (!response.ok) {
-        throw new Error(`API returned HTTP ${response.status}`);
-      }
-
-      const payload: unknown = await response.json();
-      const parsedResponse = parseCollectionResponse(payload, collection);
-      if (!parsedResponse) {
-        throw new Error(`Shopademia API returned an invalid ${collection} response`);
-      }
-      setItems(parsedResponse.items);
+      setItems(await fetchCollectionItems(collection));
     } catch (error) {
       console.error(`Unable to load the demo ${collection}.`, error);
       setLoadError(true);
@@ -100,8 +99,33 @@ export function CollectionPage({ collection }: { collection: CollectionKind }) {
   }, [collection]);
 
   useEffect(() => {
+    let active = true;
+    void fetchCollectionItems(collection).then(
+      (loadedItems) => {
+        if (active) {
+          setItems(loadedItems);
+          setLoading(false);
+        }
+      },
+      (error: unknown) => {
+        if (active) {
+          console.error(`Unable to load the demo ${collection}.`, error);
+          setLoadError(true);
+          setLoading(false);
+        }
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [collection]);
+
+  function retryLoadingItems() {
+    setLoading(true);
+    setLoadError(false);
+    setFeedback(null);
     void loadItems();
-  }, [loadItems]);
+  }
 
   async function removeItem(productId: string) {
     if (pendingIdsRef.current.has(productId)) {
@@ -114,7 +138,7 @@ export function CollectionPage({ collection }: { collection: CollectionKind }) {
 
     try {
       const response = await fetch(
-        `${apiBaseUrl}/${collection}/items/${encodeURIComponent(productId)}`,
+        `${getApiBaseUrl()}/${collection}/items/${encodeURIComponent(productId)}`,
         { method: 'DELETE', credentials: 'include' },
       );
       if (!response.ok) {
@@ -123,15 +147,15 @@ export function CollectionPage({ collection }: { collection: CollectionKind }) {
 
       setItems((currentItems) => currentItems.filter((item) => item.id !== productId));
       setFeedback({
-        message: isCart ? 'Removed from your demo cart.' : 'Removed from your demo wishlist.',
+        message: isCart ? 'Removed from your cart.' : 'Removed from your wishlist.',
         isError: false,
       });
     } catch (error) {
       console.error(`Unable to remove demo product from ${collection}.`, error);
       setFeedback({
         message: isCart
-          ? 'Could not update the demo cart. Please try again.'
-          : 'Could not update the demo wishlist. Please try again.',
+          ? 'Could not update the cart. Please try again.'
+          : 'Could not update the wishlist. Please try again.',
         isError: true,
       });
     } finally {
@@ -142,36 +166,49 @@ export function CollectionPage({ collection }: { collection: CollectionKind }) {
 
   return (
     <section className="collection-page" aria-labelledby="collection-heading">
-      <p className="eyebrow">Shopademia development preview</p>
+      <p className="eyebrow">{isCart ? 'Shopademia marketplace' : 'Saved products'}</p>
       <h1 id="collection-heading">{title}</h1>
       <p className="collection-disclaimer">
-        These are fictional demo products for interface testing only. This page is not an order,
-        purchase, or offer; it has no prices, checkout, or payment.
+        {isCart
+          ? 'Seller listings can be ordered locally with cash on delivery. Fictional demo products cannot be purchased.'
+          : 'Save products here to revisit them later. Fictional demo products cannot be purchased.'}
       </p>
+      {isCart ? (
+        <Link className="preview-secondary-link" href="/checkout">
+          Continue to checkout
+        </Link>
+      ) : null}
 
       {loading ? (
-        <p className="collection-feedback" role="status">Loading your demo {collection}…</p>
+        <p className="collection-feedback" role="status">Loading your {collection}…</p>
       ) : loadError ? (
         <div className="collection-feedback collection-feedback-error" role="alert">
-          <p>Could not load your demo {collection}. Your saved data may be unavailable right now.</p>
-          <button className="collection-retry" type="button" onClick={() => void loadItems()}>
+          <p>Could not load your {collection}. Your saved data may be unavailable right now.</p>
+          <button className="collection-retry" type="button" onClick={retryLoadingItems}>
             Try again
           </button>
         </div>
       ) : items.length === 0 ? (
         <p className="collection-empty">
-          Your demo {collection} is empty. Demo items are not real listings.
+          Your {collection} is empty. Fictional demo products are not for sale.
         </p>
       ) : (
         <ul className="collection-list">
           {items.map((item) => (
             <li className="collection-item" key={item.id}>
               <div className="collection-item-copy">
-                <span className="collection-item-label">Fictional demo item · not for sale</span>
-                <h2>{item.title}</h2>
-                <p>{item.category}{item.brand ? ` · Example brand: ${item.brand}` : ''}</p>
-                <p>{item.description}</p>
-                {isCart && 'quantity' in item ? <p>Demo quantity: {item.quantity}</p> : null}
+              <span className="collection-item-label">
+                {item.isDemo ? 'Fictional demo item · not for sale' : 'Seller listing'}
+              </span>
+              <h2>{item.title}</h2>
+              <p>{item.category}{item.brand ? ` · ${item.brand}` : ''}</p>
+              <p>{item.description}</p>
+              {isCart && 'quantity' in item ? (
+                <p>
+                  Quantity: {item.quantity}
+                  {item.priceBdt === null ? ' · not purchasable' : ` · ৳${(item.priceBdt * item.quantity).toLocaleString()}`}
+                </p>
+              ) : null}
               </div>
               <button
                 className="collection-remove"

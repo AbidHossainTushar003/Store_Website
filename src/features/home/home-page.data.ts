@@ -1,5 +1,5 @@
-export { getDemoProducts } from '@/features/catalog/catalog-data';
+export { getCatalogProducts } from '@/features/catalog/catalog-data';
 export type {
-  DemoProduct,
-  DemoProductResult,
+  StorefrontProduct,
+  CatalogProductResult,
 } from '@/features/catalog/catalog-data';

@@ -1,15 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-
-const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001/api/v1';
+import { useRouter } from 'next/navigation';
+import { getApiBaseUrl } from '@/lib/api-base';
 
 type ProductActionsProps = {
   productId: string;
+  isDemo: boolean;
 };
 
-export function ProductActions({ productId }: ProductActionsProps) {
+export function ProductActions({ productId, isDemo }: ProductActionsProps) {
+  const router = useRouter();
   const [pending, setPending] = useState<'cart' | 'wishlist' | null>(null);
   const [message, setMessage] = useState('');
 
@@ -18,7 +19,7 @@ export function ProductActions({ productId }: ProductActionsProps) {
     setMessage('');
 
     try {
-      const response = await fetch(`${apiBaseUrl}/${collection}/items`, {
+      const response = await fetch(`${getApiBaseUrl()}/${collection}/items`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -31,16 +32,38 @@ export function ProductActions({ productId }: ProductActionsProps) {
 
       setMessage(
         collection === 'cart'
-          ? 'Added to your demo cart. This is not a purchase.'
-          : 'Added to your demo wishlist.',
+          ? isDemo ? 'Added to your demo cart. This is not a purchase.' : 'Added to your cart.'
+          : isDemo ? 'Added to your demo wishlist.' : 'Added to your wishlist.',
       );
-    } catch {
-      console.error(`Unable to add demo product to ${collection}.`);
+    } catch (error) {
+      console.error(`Unable to add product to ${collection}.`, error);
       setMessage(
         collection === 'cart'
-          ? 'Could not confirm the demo cart update. Check your cart before trying again.'
-          : 'Could not update the demo wishlist. Please try again.',
+          ? 'Could not confirm the cart update. Check your cart before trying again.'
+          : 'Could not update the wishlist. Please try again.',
       );
+    } finally {
+      setPending(null);
+    }
+  }
+
+  async function buyNow() {
+    setPending('cart');
+    setMessage('');
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/cart/items`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }),
+      });
+      if (!response.ok) {
+        throw new Error(`API returned HTTP ${response.status}`);
+      }
+      router.push('/checkout');
+    } catch (error) {
+      console.error('Unable to start checkout for the seller listing.', error);
+      setMessage('Could not start checkout. Please try again.');
     } finally {
       setPending(null);
     }
@@ -67,14 +90,11 @@ export function ProductActions({ productId }: ProductActionsProps) {
       <button
         className="product-action"
         type="button"
-        disabled
-        aria-describedby={`buy-now-status-${productId}`}
+        disabled={isDemo || pending !== null}
+        onClick={() => void buyNow()}
       >
-        Buy now (unavailable)
+        {pending === 'cart' ? 'Opening checkout…' : isDemo ? 'Demo item · not for sale' : 'Buy now'}
       </button>
-      <span className="visually-hidden" id={`buy-now-status-${productId}`}>
-        Unavailable until checkout and payment are implemented.
-      </span>
       <p className="product-action-status" role="status" aria-live="polite">
         {message}
       </p>

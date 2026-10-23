@@ -9,12 +9,12 @@ export const metadata: Metadata = {
     default: 'Shopademia',
     template: '%s | Shopademia',
   },
-  description: 'Explore a fictional Shopademia marketplace preview. Demo products are not for sale.',
+  description: 'Browse Shopademia marketplace listings approved for public display.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body>
         <a className="skip-link" href="#main-content">
           Skip to content
